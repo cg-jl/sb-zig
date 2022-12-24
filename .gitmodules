@@ -1,0 +1,3 @@
+[submodule "deps/zgl"]
+	path = deps/zgl
+	url = git@github.com:ziglibs/zgl
