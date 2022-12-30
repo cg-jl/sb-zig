@@ -140,8 +140,8 @@ pub fn main() !void {
 
     const indices = [_]u32{ 0, 1, 2, 2, 0, 3 };
 
-    gl.blendFunc(.src_alpha, .one_minus_src_alpha);
-    gl.enable(.blend);
+    //gl.blendFunc(.src_alpha, .one_minus_src_alpha);
+    //gl.enable(.blend);
 
     const vao = gl.genVertexArray();
     defer gl.deleteVertexArray(vao);
