@@ -5,100 +5,19 @@ const std = @import("std");
 
 const Shader = struct {
     id: gl.Program,
-    // location of "u_time" uniform (if used)
     u_time: ?u32,
+    u_resolution: ?u32,
+    u_mouse: ?u32,
 };
 
-//const ro: f32 = 1.0; // density
-//const n: usize = 100;
-//const o: f32 = 1.9; // overrelaxation
-//const h: f32 = 1.0; // height of each cell
+var mouse: [2]f32 = std.mem.zeroes([2]f32);
 
-// XXX: take into account that the grid has a border of zeroed cells.
+fn update_mouse(win: ?*glfw.GLFWwindow, posx: f64, posy: f64) callconv(.C) void {
+    _ = win;
 
-//fn update(v: []f32, u: []f32, s: []f32, p: []f32, width: usize, height: usize, dt: f32) void {
-//    // Update downward velocities
-//    for (v) |*vv| vv += -9.81 * dt;
-//
-//    for (p) |*pp| pp = 0;
-//
-//    var i: usize = 1;
-//
-//    while (i < width) : (i += 1) {
-//        var j: usize = 1;
-//        while (j < height) : (j += 1) {
-//            {
-//                // pretend there's a wall on the borders
-//                const vup = v[(i - 1) * width + j];
-//                const vdown = v[i * width + j];
-//                const uleft = u[i * width + j];
-//                const uright = u[i * width + j + 1];
-//
-//                // compute divergence
-//                const div = o * (uright - uleft + vup - vdown);
-//
-//                const sc = s[(i - 1) * width + j] + s[(i + 1) * width + j] + s[
-//                    i *
-//                        width + j - 1
-//                ] + s[i * width + j + 1];
-//                // force incompressibility
-//                v[(i - 1) * width + j] = div / sc;
-//                u[i * width + j + 1] = div / sc;
-//                v[i * width + j] += div / sc;
-//                u[i * width + j] += div / sc;
-//
-//                // compute pressure
-//                p[i * width + j] += div / sc * ro * h / dt;
-//            }
-//
-//            // advection
-//            // compute v at position x where u is stored
-//            {
-//                // the particle that got here.
-//                const xu = @intToFloat(f32, i) - dt * u[i * width + j];
-//                const xv = @intToFloat(f32, j) - dt * v[i * width + j];
-//
-//                // the cell location of the particle that got here.
-//                const ci = @floatToInt(usize, std.math.clamp(xu, 0.0, @intToFloat(f32, width - 1)));
-//                const ck = @floatToInt(usize, std.math.clamp(xv, 0.0, @intToFloat(f32, height - 1)));
-//
-//                // x = distance from xu to start of cell + half cell
-//                const x = xu - @intToFloat(f32, ci) + h / 2;
-//                // y = distance from xv to bottom of cell
-//                const y = xv + 1 - @intToFloat(f32, ck);
-//
-//                const w00 = 1 - x / h;
-//                const w10 = 1 - y / h;
-//                const w01 = x / h;
-//                const w11 = y / h;
-//
-//                // the corresponding upward velocity
-//                const vu = u[ci * width + ck];
-//                const vv = w00 * w10 * v[ci * width + ck] + w10 * w11 * v[(ci - 1) * width + ck] + w01 * w11 * v[(ci - 1) * width + ck + 1] + w01 * w10 * v[ci * width + ck + 1];
-//
-//                // compute the velocity at the center of the cell to get the density
-//            }
-//        }
-//    }
-//}
-
-const Simul = struct {
-    v: []f32,
-    u: []f32,
-    width: usize,
-
-    pub fn update(slf: *@This(), dt: f32) void {
-
-        // update velocities
-        for (slf.v) |*v| {
-            v += -9.81 * dt;
-        }
-
-        // compute divergence
-        var i: usize = slf.width;
-        while (i < slf.v.len - slf.width) : (i += 1) {}
-    }
-};
+    mouse[0] = @floatCast(f32, posx);
+    mouse[1] = @floatCast(f32, posy);
+}
 
 pub fn main() !void {
     if (glfw.glfwInit() == 0) {
@@ -129,6 +48,8 @@ pub fn main() !void {
 
     // vsync
     glfw.glfwSwapInterval(1);
+
+    _ = glfw.glfwSetCursorPosCallback(window, &update_mouse);
 
     // data
     const vertices = [_]f32{
@@ -196,6 +117,8 @@ pub fn main() !void {
         // update uniform(s)
         gl.useProgram(shader.id);
         gl.uniform1f(shader.u_time, @intToFloat(f32, timer.read()) * 1e-9);
+        gl.uniform2f(shader.u_resolution, 640.0, 480.0);
+        gl.uniform2f(shader.u_mouse, mouse[0], mouse[1]);
 
         // render: clear
         gl.clear(.{ .color = true, .depth = true });
@@ -234,6 +157,8 @@ fn buildShader(alloc: std.mem.Allocator) !Shader {
     return Shader{
         .id = program,
         .u_time = gl.getUniformLocation(program, "u_time"),
+        .u_resolution = gl.getUniformLocation(program, "u_resolution"),
+        .u_mouse = gl.getUniformLocation(program, "u_mouse"),
     };
 }
 
